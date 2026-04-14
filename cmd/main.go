@@ -8,7 +8,9 @@ import (
 )
 
 func main() {
-	startTime := time.Now()
+	defer func(t time.Time) {
+		fmt.Println("Elapsed Time (ms):", time.Since(t).Milliseconds())
+	}(time.Now())
 	var cli iotools.CLIArgs
 	err := cli.Parse()
 	if err != nil {
@@ -43,5 +45,4 @@ func main() {
 			}
 		}
 	}
-	fmt.Println("Elapsed Time: ", time.Since(startTime).Milliseconds())
 }
