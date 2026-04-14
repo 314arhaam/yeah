@@ -1,12 +1,7 @@
 package iotools
 
 import (
-	// "fmt"
-	// "sync"
 	"os"
-	// "flag"
-	// "strconv"
-	// "strings"
 )
 
 func MakeFixSizeFile(fname string, size int) {
