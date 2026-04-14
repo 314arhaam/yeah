@@ -12,7 +12,7 @@ func main() {
 	var cli iotools.CLIArgs
 	err := cli.Parse()
 	if err != nil {
-		fmt.Println("Main: Error", err.Error())
+		fmt.Println("Main: Error @ Parse Args:", err.Error())
 		return
 	}
 	if !(*cli.Parallel) {
@@ -28,7 +28,9 @@ func main() {
 		w.Wait()
 	} else {
 		for _, val := range cli.FileData {
-			iotools.MakeFixSizeFile(val.FileName, val.FileSize)
+			if err := iotools.MakeFixSizeFile(val.FileName, val.FileSize); err != nil {
+				fmt.Println("Main: Error @ Synchron `MakeFixedSizeFile()`:", err.Error())
+			}
 		}
 	}
 	fmt.Println("Elapsed Time: ", time.Since(startTime).Milliseconds())
