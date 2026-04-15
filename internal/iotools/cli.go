@@ -23,12 +23,33 @@ func getFileData(s string) ([]FileData, error) {
 	argsSlice := strings.Split(s, ",")
 	fds := make([]FileData, len(argsSlice))
 	for i, val := range argsSlice {
-		tmp, err := strconv.Atoi(strings.Trim(val, " "))
-		if err != nil {
-			return nil, fmt.Errorf("Error in `AtoiSlice`: Value %s cannot be parsed as int.", val)
+		trimVal := strings.Trim(val, " ")
+		// 
+		switch strings.ToUpper(string(trimVal[len(trimVal)-1])) {
+		case "K":
+			tmp, err := strconv.Atoi(trimVal[:len(trimVal)-1])
+			if err != nil {
+				return nil, fmt.Errorf("Error in `AtoiSlice`: Value %s cannot be parsed as int.", val)
+			}
+			tmp = tmp*1024
+			fds[i].FileSize = tmp
+		case "M":
+			tmp, err := strconv.Atoi(trimVal[:len(trimVal)-1])
+			if err != nil {
+				return nil, fmt.Errorf("Error in `AtoiSlice`: Value %s cannot be parsed as int.", val)
+			}
+			tmp = tmp*1024*1024
+			fds[i].FileSize = tmp
+		case "G":
+			return nil, fmt.Errorf("Error in `AtoiSlice`: GB not implemented.")
+		default:
+			tmp, err := strconv.Atoi(trimVal)
+			if err != nil {
+				return nil, fmt.Errorf("Error in `AtoiSlice`: Value %s cannot be parsed as int.", val)
+			}
+			fds[i].FileSize = tmp
 		}
 		fname := ("yeah_" + strconv.Itoa(i) + "-" + val + ".txt")
-		fds[i].FileSize = tmp
 		fds[i].FileName = fname
 	}
 	return fds, nil
