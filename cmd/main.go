@@ -19,7 +19,7 @@ func main() {
 	}
 	if !(*cli.Parallel) {
 		var w sync.WaitGroup
-		errChan := make(chan string, 1)
+		errChan := make(chan string, len(cli.FileData))
 		for _, val := range cli.FileData {
 			w.Add(1)
 			go func(fname string, fsize int, e chan <- string, wg *sync.WaitGroup) {
