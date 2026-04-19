@@ -37,7 +37,7 @@ ubuntu@uvm08:~/yeah$ ./yeah -f 25M
 Elapsed Time (ms): 6108
 ```
 
-### Multithread (go-routine)
+### Multithread (non go-routine)
 ```sh
 ubuntu@uvm08:~/yeah$ ./yeah -f 25M,25M,25M,25M,25M,25M,25M 
 Elapsed Time (ms): 8357
