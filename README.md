@@ -43,7 +43,7 @@ ubuntu@uvm08:~/yeah$ ./yeah -f 25M,25M,25M,25M,25M,25M,25M
 Elapsed Time (ms): 8357
 ```
 
-### Simple (go-routine)
+### Simple (no go-routine)
 ```sh
 ubuntu@uvm08:~/yeah$ ./yeah -f 25M,25M,25M,25M,25M,25M,25M  -s
 Elapsed Time (ms): 39512
