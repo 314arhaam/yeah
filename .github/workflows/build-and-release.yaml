@@ -1,89 +1,74 @@
-name: Build and Release
+name: Build and Release Go Binary
 
 on:
   push:
     tags:
-      - "v*"  # Trigger on version tags like v1.0.0
+      - 'v*.*.*' # Trigger on version tags like v1.0.0
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    # Explicitly grant permissions if needed for checkout, though usually default is fine for read.
-    permissions:
-      contents: read # Or 'contents: write' if you need to commit back etc.
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v4
         with:
-          go-version: "1.25"
+          go-version: '1.21' # Specify your Go version
 
       - name: Go mod tidy
         run: go mod tidy
 
       - name: Build binaries
         run: |
-          # Define the base binary name
           BINARY_NAME="yeah"
-
-          # Build for Linux
-          echo "Building for Linux..."
+          go build -ldflags="-s -w" -o bin/${BINARY_NAME}-linux-amd64 ./cmd/main.go
           GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o bin/${BINARY_NAME}-linux-amd64 ./cmd/main.go
-          
-          # Build for macOS
-          echo "Building for macOS..."
           GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o bin/${BINARY_NAME}-darwin-amd64 ./cmd/main.go
-          
-          # Build for Windows
-          echo "Building for Windows..."
           GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o bin/${BINARY_NAME}-windows-amd64.exe ./cmd/main.go
 
-      # Upload binaries as artifacts so the release job can download them
-      - name: Upload Linux binary artifact
+      - name: Upload Linux artifact
         uses: actions/upload-artifact@v4
         with:
           name: yeah-linux-amd64
-          path: ./bin/yeah-linux-amd64
+          path: bin/yeah-linux-amd64
 
-      - name: Upload macOS binary artifact
+      - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
         with:
           name: yeah-darwin-amd64
-          path: ./bin/yeah-darwin-amd64
+          path: bin/yeah-darwin-amd64
 
-      - name: Upload Windows binary artifact
+      - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
         with:
           name: yeah-windows-amd64
-          path: ./bin/yeah-windows-amd64.exe
+          path: bin/yeah-windows-amd64.exe
 
   release:
     runs-on: ubuntu-latest
-    needs: build # This job will only run if the 'build' job completes successfully
+    needs: build
     permissions:
-      contents: write # Required for creating releases and uploading assets
+      contents: write
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Download the artifacts created by the build job
-      - name: Download Linux binary artifact
+      - name: Download Linux artifact
         uses: actions/download-artifact@v4
         with:
           name: yeah-linux-amd64
-          path: ./release-assets/linux # Download to a specific directory
+          path: ./release-assets/linux
 
-      - name: Download macOS binary artifact
+      - name: Download macOS artifact
         uses: actions/download-artifact@v4
         with:
           name: yeah-darwin-amd64
           path: ./release-assets/macos
 
-      - name: Download Windows binary artifact
+      - name: Download Windows artifact
         uses: actions/download-artifact@v4
         with:
           name: yeah-windows-amd64
@@ -107,25 +92,25 @@ jobs:
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./release-assets/linux/yeah-linux-amd64
-          asset_name: yeah-linux-amd64 # Final name on GitHub releases
+          asset_name: yeah-linux-amd64
           asset_content_type: application/octet-stream
 
       - name: Upload macOS Release Asset
-        uses: actions/upload-artifact@v4 # Corrected tool here, was upload-release-asset
+        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./release-assets/macos/yeah-darwin-amd64
-          asset_name: yeah-darwin-amd64 # Final name on GitHub releases
+          asset_name: yeah-darwin-amd64
           asset_content_type: application/octet-stream
 
       - name: Upload Windows Release Asset
-        uses: actions/upload-release-asset@v1 # Corrected tool here, was upload-release-asset
+        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./release-assets/windows/yeah-windows-amd64.exe
-          asset_name: yeah-windows-amd64.exe # Final name on GitHub releases
+          asset_name: yeah-windows-amd64.exe
           asset_content_type: application/vnd.microsoft.portable-executable
