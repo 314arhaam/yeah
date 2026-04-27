@@ -19,15 +19,13 @@ jobs:
           go-version: "1.25"
 
       - name: Go mod tidy
-        working-directory: ./go
         run: go mod tidy
 
       - name: Build binaries
-        working-directory: ./go
         run: |
-          GOOS=linux GOARCH=amd64 go build -o ../alpyne-linux-amd64 ./cmd/main.go
-          GOOS=darwin GOARCH=amd64 go build -o ../alpyne-darwin-amd64 ./cmd/main.go
-          GOOS=windows GOARCH=amd64 go build -o ../alpyne-windows-amd64.exe ./cmd/main.go
+          GOOS=linux GOARCH=amd64 go build -o ../yeah-linux-amd64 ./cmd/main.go
+          GOOS=darwin GOARCH=amd64 go build -o ../yeah-darwin-amd64 ./cmd/main.go
+          GOOS=windows GOARCH=amd64 go build -o ../yeah-windows-amd64.exe ./cmd/main.go
 
       - name: Create GitHub Release
         id: create_release
@@ -36,7 +34,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref_name }}
-          release_name: "Alpyne ${{ github.ref_name }}"
+          release_name: "yeah ${{ github.ref_name }}"
           draft: false
           prerelease: false
 
@@ -46,8 +44,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./alpyne-linux-amd64
-          asset_name: alpyne-linux-amd64
+          asset_path: ./yeah-linux-amd64
+          asset_name: yeah-linux-amd64
           asset_content_type: application/octet-stream
 
       - name: Upload macOS binary
@@ -56,8 +54,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./alpyne-darwin-amd64
-          asset_name: alpyne-darwin-amd64
+          asset_path: ./yeah-darwin-amd64
+          asset_name: yeah-darwin-amd64
           asset_content_type: application/octet-stream
 
       - name: Upload Windows binary
@@ -66,6 +64,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./alpyne-windows-amd64.exe
-          asset_name: alpyne-windows-amd64.exe
+          asset_path: ./yeah-windows-amd64.exe
+          asset_name: yeah-windows-amd64.exe
           asset_content_type: application/vnd.microsoft.portable-executable
