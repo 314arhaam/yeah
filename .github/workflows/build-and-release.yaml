@@ -3,10 +3,10 @@ name: Build and Release
 on:
   push:
     tags:
-      - "v*"  # Trigger on version tags like v1.0.0
+      - "v*"
 
 jobs:
-  build_and_release:  # Renamed job to reflect combined actions
+  build_and_release:
     runs-on: ubuntu-latest
 
     steps:
@@ -16,17 +16,23 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.22" # Changed to a stable version
+          go-version: "1.22"
 
       - name: Go mod tidy
         run: go mod tidy
 
-      - name: Build binaries
+      - name: Build Linux (amd64)
+        run: go build -ldflags="-s -w" -o yeah-linux-amd64 ./cmd/main.go
+
+      - name: Build macOS (amd64)
+        run: go build -ldflags="-s -w" -o yeah-darwin-amd64 ./cmd/main.go
+
+      - name: Build Windows (amd64)
+        run: go build -ldflags="-s -w" -o yeah-windows-amd64.exe ./cmd/main.go
+
+      - name: Build Android (arm64)
         run: |
-          # Build binaries directly into the workspace root for easy upload
-          go build -ldflags="-s -w" -o yeah-linux-amd64 ./cmd/main.go
-          go build -ldflags="-s -w" -o yeah-darwin-amd64 ./cmd/main.go
-          go build -ldflags="-s -w" -o yeah-windows-amd64.exe ./cmd/main.go
+          GOOS=android GOARCH=arm64 go build -ldflags="-s -w" -o yeah-android-arm64 ./cmd/main.go
 
       - name: Create GitHub Release
         id: create_release
@@ -45,7 +51,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./yeah-linux-amd64 # Path is now directly in the workspace root
+          asset_path: ./yeah-linux-amd64
           asset_name: yeah-linux-amd64
           asset_content_type: application/octet-stream
 
@@ -55,7 +61,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./yeah-darwin-amd64 # Path is now directly in the workspace root
+          asset_path: ./yeah-darwin-amd64
           asset_name: yeah-darwin-amd64
           asset_content_type: application/octet-stream
 
@@ -65,6 +71,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./yeah-windows-amd64.exe # Path is now directly in the workspace root
+          asset_path: ./yeah-windows-amd64.exe
           asset_name: yeah-windows-amd64.exe
           asset_content_type: application/vnd.microsoft.portable-executable
+
+      - name: Upload Android binary
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./yeah-android-arm64
+          asset_name: yeah-android-arm64
+          asset_content_type: application/octet-stream
