@@ -6,7 +6,7 @@ on:
       - "v*"  # Trigger on version tags like v1.0.0
 
 jobs:
-  build:
+  build_and_release:  # Renamed job to reflect combined actions
     runs-on: ubuntu-latest
 
     steps:
@@ -16,16 +16,17 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.25"
+          go-version: "1.22" # Changed to a stable version
 
       - name: Go mod tidy
         run: go mod tidy
 
       - name: Build binaries
         run: |
-          GOOS=linux GOARCH=amd64 go build -o ../yeah-linux-amd64 ./cmd/main.go
-          GOOS=darwin GOARCH=amd64 go build -o ../yeah-darwin-amd64 ./cmd/main.go
-          GOOS=windows GOARCH=amd64 go build -o ../yeah-windows-amd64.exe ./cmd/main.go
+          # Build binaries directly into the workspace root for easy upload
+          go build -ldflags="-s -w" -o yeah-linux-amd64 ./cmd/main.go
+          go build -ldflags="-s -w" -o yeah-darwin-amd64 ./cmd/main.go
+          go build -ldflags="-s -w" -o yeah-windows-amd64.exe ./cmd/main.go
 
       - name: Create GitHub Release
         id: create_release
@@ -44,7 +45,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./yeah-linux-amd64
+          asset_path: ./yeah-linux-amd64 # Path is now directly in the workspace root
           asset_name: yeah-linux-amd64
           asset_content_type: application/octet-stream
 
@@ -54,7 +55,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./yeah-darwin-amd64
+          asset_path: ./yeah-darwin-amd64 # Path is now directly in the workspace root
           asset_name: yeah-darwin-amd64
           asset_content_type: application/octet-stream
 
@@ -64,6 +65,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./yeah-windows-amd64.exe
+          asset_path: ./yeah-windows-amd64.exe # Path is now directly in the workspace root
           asset_name: yeah-windows-amd64.exe
           asset_content_type: application/vnd.microsoft.portable-executable
