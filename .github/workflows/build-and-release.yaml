@@ -1,78 +1,33 @@
-name: Build and Release Go Binary
+name: Build and Release
 
 on:
   push:
     tags:
-      - 'v*.*.*' # Trigger on version tags like v1.0.0
+      - "v*"  # Trigger on version tags like v1.0.0
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          go-version: '1.21' # Specify your Go version
+          go-version: "1.25"
 
       - name: Go mod tidy
+        working-directory: ./go
         run: go mod tidy
 
       - name: Build binaries
+        working-directory: ./go
         run: |
-          BINARY_NAME="yeah"
-          go build -ldflags="-s -w" -o bin/${BINARY_NAME}-linux-amd64 ./cmd/main.go
-          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o bin/${BINARY_NAME}-linux-amd64 ./cmd/main.go
-          GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o bin/${BINARY_NAME}-darwin-amd64 ./cmd/main.go
-          GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o bin/${BINARY_NAME}-windows-amd64.exe ./cmd/main.go
-
-      - name: Upload Linux artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: yeah-linux-amd64
-          path: bin/yeah-linux-amd64
-
-      - name: Upload macOS artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: yeah-darwin-amd64
-          path: bin/yeah-darwin-amd64
-
-      - name: Upload Windows artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: yeah-windows-amd64
-          path: bin/yeah-windows-amd64.exe
-
-  release:
-    runs-on: ubuntu-latest
-    needs: build
-    permissions:
-      contents: write
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Download Linux artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: yeah-linux-amd64
-          path: ./release-assets/linux
-
-      - name: Download macOS artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: yeah-darwin-amd64
-          path: ./release-assets/macos
-
-      - name: Download Windows artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: yeah-windows-amd64
-          path: ./release-assets/windows
+          GOOS=linux GOARCH=amd64 go build -o ../alpyne-linux-amd64 ./cmd/main.go
+          GOOS=darwin GOARCH=amd64 go build -o ../alpyne-darwin-amd64 ./cmd/main.go
+          GOOS=windows GOARCH=amd64 go build -o ../alpyne-windows-amd64.exe ./cmd/main.go
 
       - name: Create GitHub Release
         id: create_release
@@ -81,36 +36,36 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref_name }}
-          release_name: "yeah ${{ github.ref_name }}"
+          release_name: "Alpyne ${{ github.ref_name }}"
           draft: false
           prerelease: false
 
-      - name: Upload Linux Release Asset
+      - name: Upload Linux binary
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./release-assets/linux/yeah-linux-amd64
-          asset_name: yeah-linux-amd64
+          asset_path: ./alpyne-linux-amd64
+          asset_name: alpyne-linux-amd64
           asset_content_type: application/octet-stream
 
-      - name: Upload macOS Release Asset
+      - name: Upload macOS binary
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./release-assets/macos/yeah-darwin-amd64
-          asset_name: yeah-darwin-amd64
+          asset_path: ./alpyne-darwin-amd64
+          asset_name: alpyne-darwin-amd64
           asset_content_type: application/octet-stream
 
-      - name: Upload Windows Release Asset
+      - name: Upload Windows binary
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./release-assets/windows/yeah-windows-amd64.exe
-          asset_name: yeah-windows-amd64.exe
+          asset_path: ./alpyne-windows-amd64.exe
+          asset_name: alpyne-windows-amd64.exe
           asset_content_type: application/vnd.microsoft.portable-executable
