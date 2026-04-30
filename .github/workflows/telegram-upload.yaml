@@ -43,28 +43,11 @@ jobs:
         run: |
           MESSAGE="🚀 New Release
 
-                  Repository: ${{ github.repository }}
-                  Tag: ${{ github.event.inputs.tag }}
-                  
-                  Description: Release binaries
-                  Link: https://github.com/${{ github.repository }}/releases/tag/${{ github.event.inputs.tag }}
-                  
-                  Checksums:
-                  "
-
-                            if [[ -s checksums.txt ]]; then
-                              while IFS= read -r line; do
-                                FILE=$(echo "$line" | awk '{print $2}')
-                                CHECKSUM=$(echo "$line" | awk '{print $1}')
-                                MESSAGE="${MESSAGE}- ${FILE}
-                    SHA256: ${CHECKSUM}
-                  
-                  "
-                              done < checksums.txt
-                            else
-                              MESSAGE="${MESSAGE}No binaries found
-                  "
-                            fi
+                Repository: ${{ github.repository }}
+                Tag: ${{ github.event.inputs.tag }}
+                
+                Description: Release binaries
+                Link: https://github.com/${{ github.repository }}/releases/tag/${{ github.event.inputs.tag }}
 
           echo "message<<EOF" >> $GITHUB_OUTPUT
           echo "$MESSAGE" >> $GITHUB_OUTPUT
