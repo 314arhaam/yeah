@@ -1,0 +1,45 @@
+name: Send Release Binaries to Telegram
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Git tag to send binaries from (e.g. v1.0.0)'
+        required: true
+
+jobs:
+  send_release_to_telegram:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download release assets
+        uses: robinraju/release-downloader@v1
+        with:
+          tag: ${{ github.event.inputs.tag }}
+          fileName: "*"
+          tarBall: false
+          zipBall: false
+
+      - name: List downloaded files
+        run: ls -lh
+
+      - name: Send release binaries to Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          echo "Sending release files to Telegram..."
+          for FILE in *; do
+            if [[ -f "$FILE" ]]; then
+              echo "Uploading $FILE"
+              curl -s -X POST \
+                -H "Content-Type: multipart/form-data" \
+                -F "chat_id=$TELEGRAM_CHAT_ID" \
+                -F "caption=Release ${{ github.event.inputs.tag }}: $FILE" \
+                -F "document=@$FILE" \
+                "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendDocument"
+            fi
+          done
