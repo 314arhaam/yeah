@@ -23,76 +23,82 @@ jobs:
           tarBall: false
           zipBall: false
 
-      - name: List downloaded files (for debugging)
+      - name: List downloaded files
         run: ls -lh
 
       - name: Calculate SHA256 checksums
         run: |
-          echo "Calculating checksums..."
           > checksums.txt
-
           for f in yeah-linux-amd64 yeah-darwin-amd64 yeah-windows-amd64.exe; do
             if [[ -f "$f" ]]; then
               sha256sum "$f" >> checksums.txt
             fi
           done
 
-          echo "Generated checksums:"
-          cat checksums.txt || echo "No checksums generated"
-
-      - name: Generate custom styled message
+      - name: Generate MarkdownV2 message
         id: custom_message
         run: |
-          MESSAGE="🚀 <b>New Release!</b><br><br>"
-          MESSAGE+="📦 <b>Repository:</b> ${{ github.repository }}<br>"
-          MESSAGE+="🏷️ <b>Tag:</b> ${{ github.event.inputs.tag }}<br><br>"
-          MESSAGE+="📝 <b>Description:</b> Release binaries<br>"
-          MESSAGE+="🔗 <b>Link:</b> https://github.com/${{ github.repository }}/releases/tag/${{ github.event.inputs.tag }}<br><br>"
+          escape() {
+            sed -E 's/([_*\[\]()~`>#+\-=|{}.!])/\\\1/g'
+          }
+
+          REPO=$(echo "${{ github.repository }}" | escape)
+          TAG=$(echo "${{ github.event.inputs.tag }}" | escape)
+          LINK=$(echo "https://github.com/${{ github.repository }}/releases/tag/${{ github.event.inputs.tag }}" | escape)
+
+          MESSAGE="🚀 *New Release!*\n\n"
+          MESSAGE+="📦 *Repository:* ${REPO}\n"
+          MESSAGE+="🏷️ *Tag:* ${TAG}\n\n"
+          MESSAGE+="📝 *Description:* Release binaries\n"
+          MESSAGE+="🔗 *Link:* ${LINK}\n\n"
 
           if [[ -s checksums.txt ]]; then
-            MESSAGE+="<b>Checksums:</b><br>"
-
+            MESSAGE+="*Checksums:*\n"
             while IFS= read -r line; do
-              FILE=$(echo "$line" | awk '{print $2}')
-              CHECKSUM=$(echo "$line" | awk '{print $1}')
+              FILE=$(echo "$line" | awk '{print $2}' | escape)
+              CHECKSUM=$(echo "$line" | awk '{print $1}' | escape)
 
-              MESSAGE+="• <code>$FILE</code><br>"
-              MESSAGE+="SHA256: <code>$CHECKSUM</code><br><br>"
+              MESSAGE+="• \`${FILE}\`\n"
+              MESSAGE+="  SHA256: \`${CHECKSUM}\`\n\n"
             done < checksums.txt
           else
-            MESSAGE+="<i>No binaries found.</i><br>"
+            MESSAGE+="_No binaries found._\n"
           fi
 
           echo "message<<EOF" >> $GITHUB_OUTPUT
-          echo "$MESSAGE" >> $GITHUB_OUTPUT
+          echo -e "$MESSAGE" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Send styled message to Telegram
+      - name: Send message to Telegram
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
             -d chat_id="$TELEGRAM_CHAT_ID" \
-            -d parse_mode="HTML" \
+            -d parse_mode="MarkdownV2" \
             --data-urlencode "text=${{ steps.custom_message.outputs.message }}"
 
-      - name: Send binaries and checksums to Telegram
+      - name: Send binaries and checksums
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          echo "Uploading binaries to Telegram..."
+          escape() {
+            sed -E 's/([_*\[\]()~`>#+\-=|{}.!])/\\\1/g'
+          }
 
           for FILE in yeah-linux-amd64 yeah-darwin-amd64 yeah-windows-amd64.exe; do
             if [[ -f "$FILE" ]]; then
-              CHECKSUM=$(grep "$FILE" checksums.txt | awk '{print $1}')
+              CHECKSUM=$(grep "$FILE" checksums.txt | awk '{print $1}' | escape)
+              FILE_ESC=$(echo "$FILE" | escape)
+              TAG_ESC=$(echo "${{ github.event.inputs.tag }}" | escape)
 
-              CAPTION="<b>File:</b> $FILE <b>SHA256:</b> <code>$CHECKSUM</code> <i>Tag:</i> ${{ github.event.inputs.tag }}"
+              CAPTION="*File:* ${FILE_ESC}\n*SHA256:* \`${CHECKSUM}\`\n_Tag:_ ${TAG_ESC}"
 
               curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendDocument" \
                 -F "chat_id=$TELEGRAM_CHAT_ID" \
-                -F "parse_mode=HTML" \
+                -F "parse_mode=MarkdownV2" \
                 -F "caption=$CAPTION" \
                 -F "document=@$FILE"
 
@@ -103,7 +109,7 @@ jobs:
           if [[ -f checksums.txt ]]; then
             curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendDocument" \
               -F "chat_id=$TELEGRAM_CHAT_ID" \
-              -F "parse_mode=HTML" \
-              -F "caption=<b>Full checksums list</b>" \
+              -F "parse_mode=MarkdownV2" \
+              -F "caption=_Full checksums list_" \
               -F "document=@checksums.txt"
           fi
