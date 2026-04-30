@@ -41,8 +41,7 @@ jobs:
       - name: Generate custom styled message
         id: custom_message
         run: |
-          MESSAGE="🚀 *Release \`${{ github.event.inputs.tag }}\` * 🚀\
-          _This batch includes binaries & their SHA256 checksums._"
+          MESSAGE="🚀 *Release \`${{ github.event.inputs.tag }}\`* 🚀"
 
       - name: Send styled message to Telegram
         env:
