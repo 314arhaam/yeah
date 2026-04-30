@@ -42,7 +42,7 @@ jobs:
       - name: Generate custom styled message
         id: custom_message
         run: |
-          MESSAGE="🚀 <b>New Release!</b> %0A %0A
+          MESSAGE="🚀 <b>New Release\!</b> %0A %0A
           📦 <b>Repository:</b> %0A \
           🏷️ <b>Tag:</b> %0A %0A \
           📝 <b>Description:</b> %0A \
