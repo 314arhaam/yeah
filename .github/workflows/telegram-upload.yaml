@@ -34,25 +34,59 @@ jobs:
         run: ls -lh
 
       - name: Calculate SHA256 checksums
-        id: checksums
         run: |
           echo "Calculating checksums..."
-          declare -A SHA256_CHECKSUMS
-          for FILE in *; do
-            if [[ -f "$FILE" ]]; then
-              # Make sure we only process downloaded files, not other repo files if any
-              # This assumes downloaded files are directly in the root after download
-              # Adjust if robinraju/release-downloader extracts them into a subfolder
-              if [[ "$FILE" == "yeah-"* ]] || [[ "$FILE" == "*.exe" ]] || [[ "$FILE" == "*.tar.gz" ]] || [[ "$FILE" == "*.zip" ]]; then
-                CHECKSUM=$(sha256sum "$FILE" | awk '{print $1}')
-                echo "::set-output name=${FILE}_checksum::${CHECKSUM}"
-                SHA256_CHECKSUMS["$FILE"]="$CHECKSUM"
-                echo "$FILE: $CHECKSUM"
-              fi
+          # Compute checksums for expected binaries only
+          for f in katana-linux-amd64 katana-darwin-amd64 katana-windows-amd64.exe; do
+            if [[ -f "$f" ]]; then
+              sha256sum "$f" >> checksums.txt
             fi
           done
-          # Store all checksums for later use if needed
-          echo "::set-output name=all_checksums::$(declare -p SHA256_CHECKSUMS)"
+          echo "Generated checksums:"
+          cat checksums.txt
+
+      - name: Send pre-message to Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          MSG="🚀 *Release \`${{ github.event.inputs.tag }}\` files are being transmitted!* 🚀\
+          \n\n_This batch includes binaries & their SHA256 checksums._"
+          curl -s -X POST \
+            -d "chat_id=$TELEGRAM_CHAT_ID" \
+            -d "text=$MSG" \
+            -d "parse_mode=MarkdownV2" \
+            "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage"
+
+      - name: Send binaries and checksums to Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          echo "Uploading binaries to Telegram..."
+
+          # Loop binaries
+          for FILE in katana-linux-amd64 katana-darwin-amd64 katana-windows-amd64.exe; do
+            if [[ -f "$FILE" ]]; then
+              CHECKSUM=$(grep "$FILE" checksums.txt | awk '{print $1}')
+              CAPTION="*File:* \`$FILE\`\n*SHA256:* \`$CHECKSUM\`\n_Tag:_ \`${{ github.event.inputs.tag }}\`"
+              curl -s -X POST \
+                -F "chat_id=$TELEGRAM_CHAT_ID" \
+                -F "caption=$CAPTION" \
+                -F "parse_mode=MarkdownV2" \
+                -F "document=@$FILE" \
+                "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendDocument"
+              echo " -> Sent $FILE"
+            fi
+          done
+
+          # Send checksums.txt as well
+          curl -s -X POST \
+            -F "chat_id=$TELEGRAM_CHAT_ID" \
+            -F "caption=Full checksums list" \
+            -F "document=@checksums.txt" \
+            "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendDocument"
+          echo "✅ Upload complete."
 
       - name: Generate custom styled message
         id: custom_message
