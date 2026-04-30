@@ -88,9 +88,7 @@ jobs:
             if [[ -f "$FILE" ]]; then
               CHECKSUM=$(grep "$FILE" checksums.txt | awk '{print $1}')
 
-              CAPTION="<b>File:</b> $FILE
-<b>SHA256:</b> <code>$CHECKSUM</code>
-<i>Tag:</i> ${{ github.event.inputs.tag }}"
+              CAPTION="<b>File:</b> $FILE <b>SHA256:</b> <code>$CHECKSUM</code> <i>Tag:</i> ${{ github.event.inputs.tag }}"
 
               curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendDocument" \
                 -F "chat_id=$TELEGRAM_CHAT_ID" \
