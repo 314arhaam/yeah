@@ -83,9 +83,7 @@ jobs:
           for FILE in yeah-linux-amd64 yeah-darwin-amd64 yeah-windows-amd64.exe; do
             if [[ -f "$FILE" ]]; then
               CHECKSUM=$(grep "$FILE" checksums.txt | awk '{print $1}')
-              CAPTION="<b>File:</b> $FILE %0A \
-                       <b>SHA256:</b> $CHECKSUM %0A \
-                       <i>Tag:</i> ${{ github.event.inputs.tag }}"
+              CAPTION="<b>File:</b> $FILE %0A <b>SHA256:</b> $CHECKSUM %0A <i>Tag:</i> ${{ github.event.inputs.tag }}"
               curl -s -X POST \
                 -F "chat_id=$TELEGRAM_CHAT_ID" \
                 -F "caption=$CAPTION" \
