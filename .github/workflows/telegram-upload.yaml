@@ -41,8 +41,8 @@ jobs:
       - name: Generate custom styled message
         id: custom_message
         run: |
-          MESSAGE="🚀 *Release \`${{ github.event.inputs.tag }}\` files are being transmitted\!* 🚀\
-          \n\n_This batch includes binaries & their SHA256 checksums._"
+          MESSAGE="🚀 *Release \`${{ github.event.inputs.tag }}\` * 🚀\
+          _This batch includes binaries & their SHA256 checksums._"
           
           # List file checksums
           while IFS= read -r line; do
@@ -77,7 +77,7 @@ jobs:
           for FILE in yeah-linux-amd64 yeah-darwin-amd64 yeah-windows-amd64.exe; do
             if [[ -f "$FILE" ]]; then
               CHECKSUM=$(grep "$FILE" checksums.txt | awk '{print $1}')
-              CAPTION="📦\
+              CAPTION="📦 \
               *File:* \`$FILE\` \ 
               *SHA256:* \`$CHECKSUM\` \ 
               _Tag:_ \`${{ github.event.inputs.tag }}\` \
