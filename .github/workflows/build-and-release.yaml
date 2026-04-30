@@ -89,17 +89,3 @@ jobs:
           asset_path: artifacts/yeah-windows-amd64.exe/yeah-windows-amd64.exe
           asset_name: yeah-windows-amd64.exe
           asset_content_type: application/vnd.microsoft.portable-executable
-
-  upload_telegram:
-    needs: create_release_and_upload_assets
-    runs-on: ubuntu-latest
-    steps:
-      - name: Post Files to Telegram
-        uses: xireiki/channel-post@v2
-        with:
-          bot_token: ${{ secrets.BOT_TOKEN }}
-          chat_id: ${{ secrets.CHAT_ID }}
-          context: "New release"
-          path: artifacts/yeah-linux-amd64/yeah-linux-amd64
-          parse_mode: None
-          method: sendFile
