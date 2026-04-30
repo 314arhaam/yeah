@@ -42,8 +42,13 @@ jobs:
       - name: Generate custom styled message
         id: custom_message
         run: |
-          MESSAGE="🚀 *Release \`${{ github.event.inputs.tag }}\` files are being transmitted\!* 🚀\
-          \n\nThis batch includes binaries & their SHA256 checksums."
+          MESSAGE="🚀 <b>New Release!</b>%0A \
+          <b>Project:</b> <pre>yeah</pre>%0A \
+          <b>Tag</b>%0A \
+          <b>Description:</b>%0A \
+          <b>Link:</b>%0A \
+          %0A \
+          Binaries are being sent here"
           
           # List file checksums
           while IFS= read -r line; do
@@ -63,7 +68,7 @@ jobs:
         run: |
           curl -s -X POST \
             -d chat_id="$TELEGRAM_CHAT_ID" \
-            -d parse_mode="MarkdownV2" \
+            -d parse_mode="HTML" \
             -d text="${{ steps.custom_message.outputs.message }}" \
             "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage"
 
@@ -82,7 +87,7 @@ jobs:
               curl -s -X POST \
                 -F "chat_id=$TELEGRAM_CHAT_ID" \
                 -F "caption=$CAPTION" \
-                -F "parse_mode=MarkdownV2" \
+                -F "parse_mode=HTML" \
                 -F "document=@$FILE" \
                 "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendDocument"
               echo " -> Sent $FILE"
@@ -93,6 +98,6 @@ jobs:
           curl -s -X POST \
             -F "chat_id=$TELEGRAM_CHAT_ID" \
             -F "caption=_Full checksums list_" \
-            -F "parse_mode=MarkdownV2" \
+            -F "parse_mode=HTML" \
             -F "document=@checksums.txt" \
             "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendDocument"
