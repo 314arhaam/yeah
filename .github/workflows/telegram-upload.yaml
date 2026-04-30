@@ -49,10 +49,12 @@ jobs:
         run: |
           REPO_NAME=${{ github.event.repository.name }}
           TAG_NAME=${{ github.event.inputs.tag }}
+          REPO_LINK="https://github.com/314arhaam/$REPO_NAME"
           curl -s -X POST \
             -d chat_id="$TELEGRAM_CHAT_ID" \
             -d parse_mode="MarkdownV2" \
-            -d text="🚀 *New Release:* \`$REPO_NAME\`@\`$TAG_NAME\` " \
+            -d text="🚀 *New Release:* \`$REPO_NAME\`@\`$TAG_NAME\` 
+            [Check the repository here]($REPO_LINK)" \
             "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage"
 
       - name: Send binaries and checksums to Telegram
