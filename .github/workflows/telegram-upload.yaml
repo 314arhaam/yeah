@@ -43,7 +43,7 @@ jobs:
         id: custom_message
         run: |
           MESSAGE="🚀 *Release \`${{ github.event.inputs.tag }}\` files are being transmitted\!* 🚀\
-          \n\n_This batch includes binaries & their SHA256 checksums._"
+          \n\nThis batch includes binaries & their SHA256 checksums."
           
           # List file checksums
           while IFS= read -r line; do
