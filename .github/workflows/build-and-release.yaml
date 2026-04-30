@@ -95,7 +95,7 @@ jobs:
         with:
           bot_token: ${{ secrets.BOT_TOKEN }}
           chat_id: ${{ secrets.CHAT_ID }}
-          context: 🚀 New release on ${{ github.repository }} @ ${{ github.ref_name }}
+          context: "New release"
           path: artifacts/yeah-*
           parse_mode: None
           method: sendFile
