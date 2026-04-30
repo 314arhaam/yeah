@@ -50,7 +50,7 @@ jobs:
           curl -s -X POST \
             -d chat_id="$TELEGRAM_CHAT_ID" \
             -d parse_mode="MarkdownV2" \
-            -d text="${{ steps.custom_message.outputs.message }}" \
+            -d text="Test 🚀" \
             "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage"
 
       - name: Send binaries and checksums to Telegram
