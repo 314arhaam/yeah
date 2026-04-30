@@ -47,7 +47,7 @@ jobs:
                 Tag: ${{ github.event.inputs.tag }}
                 
                 Description: Release binaries
-                Link: https://github.com/${{ github.repository }}/releases/tag/${{ github.event.inputs.tag }}
+                Link: https://github.com/${{ github.repository }}/releases/tag/${{ github.event.inputs.tag }}"
 
           echo "message<<EOF" >> $GITHUB_OUTPUT
           echo "$MESSAGE" >> $GITHUB_OUTPUT
@@ -63,32 +63,32 @@ jobs:
             --data-urlencode "text=${{ steps.msg.outputs.message }}"
 
       - name: Send binaries and checksums
-  env:
-    TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-    TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-  run: |
-    echo "Uploading binaries..."
-
-    for FILE in yeah-linux-amd64 yeah-darwin-amd64 yeah-windows-amd64.exe; do
-      if [[ -f "$FILE" ]]; then
-        CHECKSUM=$(grep "$FILE" checksums.txt | awk '{print $1}')
-
-        CAPTION="File: $FILE"$'\n'"SHA256: $CHECKSUM"$'\n'"Tag: ${{ github.event.inputs.tag }}"
-
-        curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendDocument" \
-          -F chat_id="$TELEGRAM_CHAT_ID" \
-          -F caption="$CAPTION" \
-          -F document=@"$FILE"
-
-        echo " -> Sent $FILE"
-      else
-        echo "Missing: $FILE"
-      fi
-    done
-
-    if [[ -f checksums.txt ]]; then
-      curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendDocument" \
-        -F chat_id="$TELEGRAM_CHAT_ID" \
-        -F caption="Full checksums list" \
-        -F document=@checksums.txt
-    fi
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          echo "Uploading binaries..."
+      
+          for FILE in yeah-linux-amd64 yeah-darwin-amd64 yeah-windows-amd64.exe; do
+            if [[ -f "$FILE" ]]; then
+              CHECKSUM=$(grep "$FILE" checksums.txt | awk '{print $1}')
+      
+              CAPTION="File: $FILE"$'\n'"SHA256: $CHECKSUM"$'\n'"Tag: ${{ github.event.inputs.tag }}"
+      
+              curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendDocument" \
+                -F chat_id="$TELEGRAM_CHAT_ID" \
+                -F caption="$CAPTION" \
+                -F document=@"$FILE"
+      
+              echo " -> Sent $FILE"
+            else
+              echo "Missing: $FILE"
+            fi
+          done
+      
+          if [[ -f checksums.txt ]]; then
+            curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendDocument" \
+              -F chat_id="$TELEGRAM_CHAT_ID" \
+              -F caption="Full checksums list" \
+              -F document=@checksums.txt
+          fi
