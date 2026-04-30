@@ -1,4 +1,4 @@
-name: Build and Release
+name: build
 
 on:
   push:
@@ -6,81 +6,86 @@ on:
       - "v*"
 
 jobs:
-  build_and_release:
-    runs-on: ubuntu-latest
-
+  build_and_upload:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            goos: linux
+            bin: yeah-linux-amd64
+          - os: windows-latest
+            goos: windows
+            bin: yeah-windows-amd64.exe
+          - os: macos-latest
+            goos: darwin
+            bin: yeah-darwin-amd64
+    runs-on: ${{ matrix.os }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - uses: actions/setup-go@v5
         with:
-          go-version: "1.22"
+          go-version: '1.22'
 
-      - name: Go mod tidy
-        run: go mod tidy
-
-      - name: Build Linux (amd64)
-        run: go build -ldflags="-s -w" -o yeah-linux-amd64 ./cmd/main.go
-
-      - name: Build macOS (amd64)
-        run: go build -ldflags="-s -w" -o yeah-darwin-amd64 ./cmd/main.go
-
-      - name: Build Windows (amd64)
-        run: go build -ldflags="-s -w" -o yeah-windows-amd64.exe ./cmd/main.go
-
-      - name: Build Android (arm64)
+      - name: build
+        shell: bash
         run: |
-          GOOS=android GOARCH=arm64 go build -ldflags="-s -w" -o yeah-android-arm64 ./cmd/main.go
+          GOOS='${{ matrix.goos }}' GOARCH='amd64' CGO_ENABLED=0 go build -o '${{ matrix.bin }}' cmd/main.go
 
-      - name: Create GitHub Release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.bin }}
+          path: ${{ matrix.bin }}
+          if-no-files-found: error
+
+  create_release_and_upload_assets:
+    needs: build_and_upload
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: create release
         id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref_name }}
-          release_name: "yeah ${{ github.ref_name }}"
+          release_name: ${{ github.ref_name }}
           draft: false
           prerelease: false
 
-      - name: Upload Linux binary
+      - name: upload linux
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./yeah-linux-amd64
+          asset_path: artifacts/yeah-linux-amd64/yeah-linux-amd64
           asset_name: yeah-linux-amd64
           asset_content_type: application/octet-stream
 
-      - name: Upload macOS binary
+      - name: upload macos
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./yeah-darwin-amd64
+          asset_path: artifacts/yeah-darwin-amd64/yeah-darwin-amd64
           asset_name: yeah-darwin-amd64
           asset_content_type: application/octet-stream
 
-      - name: Upload Windows binary
+      - name: upload windows
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./yeah-windows-amd64.exe
+          asset_path: artifacts/yeah-windows-amd64.exe/yeah-windows-amd64.exe
           asset_name: yeah-windows-amd64.exe
           asset_content_type: application/vnd.microsoft.portable-executable
-
-      - name: Upload Android binary
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./yeah-android-arm64
-          asset_name: yeah-android-arm64
-          asset_content_type: application/octet-stream
