@@ -1,9 +1,11 @@
-name: Send Release Binaries to Telegram (v2)
+name: send_artifacts_tg
 
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_run:
+    workflows: ["build_and_release"]
+    branches: [master]
+    types: 
+      - completed
 
 # on:
   # workflow_dispatch:
