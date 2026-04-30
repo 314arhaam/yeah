@@ -42,12 +42,11 @@ jobs:
       - name: Generate custom styled message
         id: custom_message
         run: |
-          MESSAGE="🚀 <b>New Release!</b>%0A \
-          <b>Project:</b> <pre>yeah</pre>%0A \
-          <b>Tag</b>%0A \
-          <b>Description:</b>%0A \
-          <b>Link:</b>%0A \
-          %0A \
+          MESSAGE="🚀 <b>New Release!</b> %0A %0A
+          📦 <b>Repository:</b> %0A \
+          🏷️ <b>Tag:</b> %0A %0A \
+          📝 <b>Description:</b> %0A \
+          🔗 <b>Link:</b> \
           Binaries are being sent here"
           
           # List file checksums
@@ -57,7 +56,7 @@ jobs:
             MESSAGE+="\n• \`$FILE\`\n  SHA256: \`$CHECKSUM\`"
           done < checksums.txt
           
-          MESSAGE+="\n\n_Please verify the checksums after download._"
+          # MESSAGE+="\n\n_Please verify the checksums after download._"
           
           echo "::set-output name=message::$(echo "$MESSAGE" | sed 's/:/\\:/g' | sed 's/"/\\"/g')"
 
@@ -83,10 +82,10 @@ jobs:
           for FILE in yeah-linux-amd64 yeah-darwin-amd64 yeah-windows-amd64.exe; do
             if [[ -f "$FILE" ]]; then
               CHECKSUM=$(grep "$FILE" checksums.txt | awk '{print $1}')
-              CAPTION="<b>File:</b> $FILE %0A <b>SHA256:</b> $CHECKSUM %0A <i>Tag:</i> ${{ github.event.inputs.tag }}"
+              # CAPTION="<b>File:</b> $FILE %0A <b>SHA256:</b> $CHECKSUM %0A <i>Tag:</i> ${{ github.event.inputs.tag }}"
               curl -s -X POST \
                 -F "chat_id=$TELEGRAM_CHAT_ID" \
-                -F "caption=$CAPTION" \
+                -F "caption=<b>File:</b> $FILE %0A <b>SHA256:</b> $CHECKSUM %0A <i>Tag:</i> ${{ github.event.inputs.tag }}" \
                 -F "parse_mode=HTML" \
                 -F "document=@$FILE" \
                 "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendDocument"
