@@ -43,17 +43,6 @@ jobs:
         run: |
           MESSAGE="🚀 *Release \`${{ github.event.inputs.tag }}\` * 🚀\
           _This batch includes binaries & their SHA256 checksums._"
-          
-          # List file checksums
-          while IFS= read -r line; do
-            FILE=$(echo "$line" | awk '{print $2}')
-            CHECKSUM=$(echo "$line" | awk '{print $1}')
-            MESSAGE+="\n• \`$FILE\`\n  SHA256: \`$CHECKSUM\`"
-          done < checksums.txt
-          
-          MESSAGE+="\n\n_Please verify the checksums after download._"
-          
-          echo "::set-output name=message::$(echo "$MESSAGE" | sed 's/:/\\:/g' | sed 's/"/\\"/g')"
 
       - name: Send styled message to Telegram
         env:
