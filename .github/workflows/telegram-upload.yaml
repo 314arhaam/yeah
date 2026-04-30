@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Git tag to send binaries from (e.g. v1.0.0)'
+        description: 'Git tag to send binaries from (e.g., v1.0.0)'
         required: true
 
 jobs:
@@ -19,14 +19,12 @@ jobs:
         uses: robinraju/release-downloader@v1
         with:
           tag: ${{ github.event.inputs.tag }}
-          # Only download files that look like binaries (executables)
-          # You might need to adjust this pattern if your binaries have different extensions
           filter: |
-            *.tar.gz
-            *.zip
             yeah-linux-amd64
             yeah-darwin-amd64
             yeah-windows-amd64.exe
+            *.tar.gz
+            *.zip
           tarBall: false
           zipBall: false
 
@@ -36,8 +34,8 @@ jobs:
       - name: Calculate SHA256 checksums
         run: |
           echo "Calculating checksums..."
-          # Compute checksums for expected binaries only
-          for f in katana-linux-amd64 katana-darwin-amd64 katana-windows-amd64.exe; do
+          # For each expected binary, generate checksum
+          for f in yeah-linux-amd64 yeah-darwin-amd64 yeah-windows-amd64.exe; do
             if [[ -f "$f" ]]; then
               sha256sum "$f" >> checksums.txt
             fi
@@ -45,17 +43,32 @@ jobs:
           echo "Generated checksums:"
           cat checksums.txt
 
-      - name: Send pre-message to Telegram
+      - name: Generate custom styled message
+        id: custom_message
+        run: |
+          MESSAGE="🚀 *Release \`${{ github.event.inputs.tag }}\` files are being transmitted!* 🚀\
+          \n\n_This batch includes binaries & their SHA256 checksums._"
+          
+          # List file checksums
+          while IFS= read -r line; do
+            FILE=$(echo "$line" | awk '{print $2}')
+            CHECKSUM=$(echo "$line" | awk '{print $1}')
+            MESSAGE+="\n• \`$FILE\`\n  SHA256: \`$CHECKSUM\`"
+          done < checksums.txt
+          
+          MESSAGE+="\n\n_Please verify the checksums after download._"
+          
+          echo "::set-output name=message::$(echo "$MESSAGE" | sed 's/:/\\:/g' | sed 's/"/\\"/g')"
+
+      - name: Send styled message to Telegram
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          MSG="🚀 *Release \`${{ github.event.inputs.tag }}\` files are being transmitted!* 🚀\
-          \n\n_This batch includes binaries & their SHA256 checksums._"
           curl -s -X POST \
-            -d "chat_id=$TELEGRAM_CHAT_ID" \
-            -d "text=$MSG" \
-            -d "parse_mode=MarkdownV2" \
+            -d chat_id="$TELEGRAM_CHAT_ID" \
+            -d parse_mode="MarkdownV2" \
+            -d text="${{ steps.custom_message.outputs.message }}" \
             "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage"
 
       - name: Send binaries and checksums to Telegram
@@ -65,8 +78,8 @@ jobs:
         run: |
           echo "Uploading binaries to Telegram..."
 
-          # Loop binaries
-          for FILE in katana-linux-amd64 katana-darwin-amd64 katana-windows-amd64.exe; do
+          # Loop through known binaries
+          for FILE in yeah-linux-amd64 yeah-darwin-amd64 yeah-windows-amd64.exe; do
             if [[ -f "$FILE" ]]; then
               CHECKSUM=$(grep "$FILE" checksums.txt | awk '{print $1}')
               CAPTION="*File:* \`$FILE\`\n*SHA256:* \`$CHECKSUM\`\n_Tag:_ \`${{ github.event.inputs.tag }}\`"
@@ -80,67 +93,10 @@ jobs:
             fi
           done
 
-          # Send checksums.txt as well
+          # Also send the checksums.txt file
           curl -s -X POST \
             -F "chat_id=$TELEGRAM_CHAT_ID" \
-            -F "caption=Full checksums list" \
+            -F "caption=_Full checksums list_" \
+            -F "parse_mode=MarkdownV2" \
             -F "document=@checksums.txt" \
             "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendDocument"
-          echo "✅ Upload complete."
-
-      - name: Generate custom styled message
-        id: custom_message
-        run: |
-          MESSAGE="🚀 *Release files for tag* \`v${{ github.event.inputs.tag }}\` *are now being sent to Telegram!* 🚀\n\n"
-          MESSAGE+="✨ *Binaries & Checksums:* ✨\n"
-          
-          # Loop through the checksums output by the previous step
-          # Note: This requires a bit of shell magic to parse the associative array
-          # If this fails, we can simplify it to just list files and their checksums
-          eval $(echo "${{ steps.checksums.outputs.all_checksums }}" | sed "s/declare -A/declare -A parsed_checksums/")
-          
-          for file in "${!parsed_checksums[@]}"; do
-            checksum=${parsed_checksums[$file]}
-            MESSAGE+="\n• \`$file\`\n  SHA256: \`$checksum\`"
-          done
-          
-          MESSAGE+="\n\n_Please verify the checksums after download._"
-          echo "::set-output name=message::$(echo "$MESSAGE" | sed 's/:/\\:/g' | sed 's/"/\\"/g')" # Escape for use in curl
-
-      - name: Send styled message to Telegram
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          curl -s -X POST \
-            -d chat_id="$TELEGRAM_CHAT_ID" \
-            -d parse_mode="MarkdownV2" \
-            -d text="${{ steps.custom_message.outputs.message }}" \
-            "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage"
-
-      - name: Send release binaries to Telegram
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          echo "Uploading binaries to Telegram..."
-          for FILE in *; do
-            if [[ -f "$FILE" ]]; then
-              # Check if it's one of the files we expect to be binaries and calculated checksums for
-              if [[ "$FILE" == "yeah-"* ]] || [[ "$FILE" == "*.exe" ]] || [[ "$FILE" == "*.tar.gz" ]] || [[ "$FILE" == "*.zip" ]]; then
-                CHECKSUM_VARNAME="${FILE}_checksum"
-                CHECKSUM=$(echo "${{ steps.checksums.outputs.$CHECKSUM_VARNAME }}" || echo "N/A") # Fallback if variable not set
-                
-                echo "Uploading $FILE with SHA256: $CHECKSUM"
-                
-                CAPTION="*File:* \`$FILE\`\n*SHA256:* \`$CHECKSUM\`\n*Release Tag:* \`${{ github.event.inputs.tag }}\`"
-                
-                curl -s -X POST \
-                  -F "chat_id=$TELEGRAM_CHAT_ID" \
-                  -F "caption=$CAPTION" \
-                  -F "document=@$FILE" \
-                  -H "Content-Type: multipart/form-data" \
-                  "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendDocument"
-              fi
-            fi
-          done
