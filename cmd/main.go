@@ -5,6 +5,7 @@ import (
 	"sync"
 	"local/yeah/internal/iotools"
 	"time"
+	"os"
 )
 
 func main() {
@@ -14,7 +15,7 @@ func main() {
 	var cli iotools.CLIArgs
 	err := cli.Parse()
 	if err != nil {
-		fmt.Println("Main: Error @ Parse Args:", err.Error())
+		fmt.Fprintln(os.Stderr, "Main: Error @ Parse Args:", err.Error())
 		return
 	}
 	if !(*cli.Parallel) {
@@ -43,13 +44,13 @@ func main() {
 		close(errChan)
 		for msg := range errChan {
 			if msg != "" {
-				fmt.Println("Main: Error @ goroutine `MakeFixedSizeFile()`:", msg)
+				fmt.Fprintln(os.Stderr, "Main: Error @ goroutine `MakeFixedSizeFile*()`:", msg)
 			}
 		}
 	} else {
 		for _, val := range cli.FileData {
 			if err := iotools.MakeFixSizeFile(val.FileName, val.FileSize); err != nil {
-				fmt.Println("Main: Error @ Synchron `MakeFixedSizeFile()`:", err.Error())
+				fmt.Fprintln(os.Stderr, "Main: Error @ Synchron `MakeFixedSizeFile*()`:", err.Error())
 			}
 		}
 	}
