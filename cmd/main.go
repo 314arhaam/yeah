@@ -5,6 +5,7 @@ import (
 	"sync"
 	"local/yeah/internal/iotools"
 	"time"
+	"os"
 )
 
 func main() {
@@ -14,7 +15,7 @@ func main() {
 	var cli iotools.CLIArgs
 	err := cli.Parse()
 	if err != nil {
-		fmt.Println("Main: Error @ Parse Args:", err.Error())
+		fmt.Fprintln(os.Stderr, "Main: Error @ Parse Args:", err.Error())
 		return
 	}
 	if !(*cli.Parallel) {
@@ -24,24 +25,32 @@ func main() {
 			w.Add(1)
 			go func(fname string, fsize int, e chan <- string, wg *sync.WaitGroup) {
 				defer wg.Done()
-				if err := iotools.MakeFixSizeFile(fname, fsize); err != nil {
-					e <- err.Error()
+				if *cli.Linear {
+					if err := iotools.MakeFixSizeFileLinear(fname, fsize); err != nil {
+						e <- err.Error()
+					}
+					e <- ""
+					return
+				} else {
+					if err := iotools.MakeFixSizeFile(fname, fsize); err != nil {
+						e <- err.Error()
+					}
+					e <- ""
+					return
 				}
-				e <- ""
-				return
 			}(val.FileName, val.FileSize, errChan, &w)
 		}
 		w.Wait()
 		close(errChan)
 		for msg := range errChan {
 			if msg != "" {
-				fmt.Println("Main: Error @ goroutine `MakeFixedSizeFile()`:", msg)
+				fmt.Fprintln(os.Stderr, "Main: Error @ goroutine `MakeFixedSizeFile*()`:", msg)
 			}
 		}
 	} else {
 		for _, val := range cli.FileData {
 			if err := iotools.MakeFixSizeFile(val.FileName, val.FileSize); err != nil {
-				fmt.Println("Main: Error @ Synchron `MakeFixedSizeFile()`:", err.Error())
+				fmt.Fprintln(os.Stderr, "Main: Error @ Synchron `MakeFixedSizeFile*()`:", err.Error())
 			}
 		}
 	}
