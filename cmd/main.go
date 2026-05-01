@@ -9,14 +9,16 @@ import (
 )
 
 func main() {
-	defer func(t time.Time) {
-		fmt.Println("Elapsed Time (ms):", time.Since(t).Milliseconds())
-	}(time.Now())
 	var cli iotools.CLIArgs
 	err := cli.Parse()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Main: Error @ Parse Args:", err.Error())
 		return
+	}
+	if (*cli.Verbose) {
+		defer func(t time.Time) {
+			fmt.Println("Elapsed Time (ms):", time.Since(t).Milliseconds())
+		}(time.Now())
 	}
 	if !(*cli.Parallel) {
 		var w sync.WaitGroup

@@ -17,6 +17,7 @@ type CLIArgs struct {
 	// exported
 	Parallel	*bool
 	Linear		*bool
+	Verbose		*bool
 	FileData	[]FileData
 }
 
@@ -59,6 +60,7 @@ func getFileData(s string) ([]FileData, error) {
 func (cli *CLIArgs) Parse() error {
 	cli.Parallel = flag.Bool("s", false, "Synchron mode")
 	cli.Linear = flag.Bool("l", false, "Use linear mode")
+	cli.Verbose = flag.Bool("v", false, "Verbose mode")
 	cli.fileSize = flag.String("f", "100", "Size of file(s) in bytes, comma separated")
 	flag.Parse()
 	res, err := getFileData(*cli.fileSize)
