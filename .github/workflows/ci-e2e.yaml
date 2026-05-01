@@ -45,9 +45,9 @@ jobs:
       
       - name: verify_assets
         shell: bash
-        run: ls -lh
+        run: ls -lh artifacts artifacts/yeah-linux-amd64
 
       - name: test_run
         shell: bash
         run: |
-          ./tests/e2e_linux.sh artifacts/'${{ matrix.bin }}'/'${{ matrix.bin }}'
+          ./tests/e2e_linux.sh artifacts/yeah-linux-amd64/yeah-linux-amd64
