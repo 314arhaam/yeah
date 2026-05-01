@@ -48,7 +48,7 @@ jobs:
         shell: bash
         run: |
           chmod +x artifacts/yeah-linux-amd64/yeah-linux-amd64
-          chmod +x tests/e2e_linux.sh
+          chmod +x ./tests/e2e_linux.sh
       
       - name: verify_binary
         shell: bash
