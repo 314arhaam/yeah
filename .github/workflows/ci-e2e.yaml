@@ -1,0 +1,53 @@
+name: CI Before Merge on master
+
+on:
+  pull_request:
+    branches:
+      - "master"
+
+jobs:
+  build_and_upload:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            goos: linux
+            bin: yeah-linux-amd64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: build_binaries
+        shell: bash
+        run: |
+          GOOS='${{ matrix.goos }}' GOARCH='amd64' CGO_ENABLED=0 go build -o '${{ matrix.bin }}' cmd/main.go
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.bin }}
+          path: ${{ matrix.bin }}
+          if-no-files-found: error
+
+  e2e_test:
+    needs: build_and_upload
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      
+      - name: verify_assets
+        shell: bash
+        run: ls -lh
+
+      - name: test_run
+        shell: bash
+        run: |
+          ./tests/e2e_linux.sh artifacts/'${{ matrix.bin }}'/'${{ matrix.bin }}'
