@@ -1,4 +1,4 @@
-name: CI Before Merge on master
+name: ci_before_pr
 
 on:
   pull_request:
